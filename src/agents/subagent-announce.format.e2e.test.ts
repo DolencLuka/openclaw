@@ -604,6 +604,7 @@ describe("subagent announce formatting", () => {
     expect(call?.params?.inputProvenance).toMatchObject({
       kind: "inter_session",
       sourceSessionKey: "agent:main:subagent:test",
+      sourceChannel: "discord",
       sourceTool: "subagent_announce",
     });
     expect(msg).toContain("final answer: 2");
@@ -1735,6 +1736,46 @@ describe("subagent announce formatting", () => {
         channel: "discord",
         to: "channel:12345",
         deliver: true,
+      },
+    });
+  });
+
+  it("uses requester session route as completion provenance when requester origin is absent", async () => {
+    sessionStore = {
+      "agent:main:main": {
+        sessionId: "requester-session-direct-route-from-session",
+        lastChannel: "whatsapp",
+        lastTo: "+1555",
+        lastAccountId: "acct-wa",
+      },
+    };
+
+    const didAnnounce = await runSubagentAnnounceFlow({
+      childSessionKey: "agent:main:subagent:worker",
+      childRunId: "run-completion-session-route",
+      requesterSessionKey: "main",
+      requesterDisplayKey: "main",
+      expectsCompletionMessage: true,
+      ...defaultOutcomeAnnounce,
+    });
+
+    expect(didAnnounce).toBe(true);
+    expect(sendSpy).not.toHaveBeenCalled();
+    expect(agentSpy).toHaveBeenCalledTimes(1);
+    expect(agentSpy.mock.calls[0]?.[0]).toMatchObject({
+      method: "agent",
+      params: {
+        sessionKey: "agent:main:main",
+        channel: "whatsapp",
+        to: "+1555",
+        accountId: "acct-wa",
+        deliver: true,
+        inputProvenance: {
+          kind: "inter_session",
+          sourceSessionKey: "agent:main:subagent:worker",
+          sourceChannel: "whatsapp",
+          sourceTool: "subagent_announce",
+        },
       },
     });
   });

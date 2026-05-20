@@ -57,6 +57,19 @@ function loadSubagentRegistryRuntime() {
   return subagentRegistryRuntimePromise;
 }
 
+function resolveSubagentAnnounceSourceChannel(params: {
+  completionDirectOrigin?: DeliveryContext;
+  directOrigin?: DeliveryContext;
+  targetRequesterOrigin?: DeliveryContext;
+}): string {
+  return (
+    params.completionDirectOrigin?.channel ??
+    params.directOrigin?.channel ??
+    params.targetRequesterOrigin?.channel ??
+    INTERNAL_MESSAGE_CHANNEL
+  );
+}
+
 export function buildSubagentSystemPrompt(params: {
   requesterSessionKey?: string;
   requesterOrigin?: DeliveryContext;
@@ -604,7 +617,11 @@ export async function runSubagentAnnounceFlow(params: {
       completionDirectOrigin,
       directOrigin,
       sourceSessionKey: params.childSessionKey,
-      sourceChannel: params.requesterOrigin?.channel ?? INTERNAL_MESSAGE_CHANNEL,
+      sourceChannel: resolveSubagentAnnounceSourceChannel({
+        completionDirectOrigin,
+        directOrigin,
+        targetRequesterOrigin,
+      }),
       sourceTool: "subagent_announce",
       targetRequesterSessionKey,
       requesterIsSubagent,
